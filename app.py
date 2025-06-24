@@ -6,8 +6,60 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
 app.config['SESSION_TYPE'] = 'filesystem'
 
-API_KEY = '발급받은_API_키_여기에_넣기'  # data.go.kr에서 받은 키로 변경하세요
+API_KEY = '44KvNd6mVM05o9F%2F%2BimFyMLx3XV%2FBzVdbnH2ht7qSWnZkvLIsJu5LpumzAtsA3msMojs6iS%2BVjlw%2BvTpvCcimA%3D%3D' # 배포시 유출 주의  
 
+# 공공 데이터 포탈 api 조회 함수
+def get_station_arrivals(ars_id):
+    url = "http://ws.bus.go.kr/api/rest/arrive/getLowArrInfoByStId"
+    params = {
+        "ServiceKey": API_KEY,
+        "arsId": ars_id,
+        "_type": "json"
+    }
+    resp = requests.get(url, params=params)
+    data = resp.json()
+    try:
+        items = data['msgBody']['itemList']
+        result = []
+        for item in items:
+            bus_number = item['rtNm']
+            arrival1 = int(item['traTime1']) // 60 if item['traTime1'].isdigit() else None
+            arrival2 = int(item['traTime2']) // 60 if item['traTime2'].isdigit() else None
+            result.append({
+                "busNumber": bus_number,
+                "arrival1": arrival1,
+                "arrival2": arrival2
+            })
+        return result
+    except:
+        return []
+
+def get_stations_by_name(st_name):
+    url = "http://ws.bus.go.kr/api/rest/stationinfo/getStationByName"
+    params = {
+        "ServiceKey": API_KEY,
+        "stSrch": st_name,
+        "_type": "json"
+    }
+    resp = requests.get(url, params=params)
+    data = resp.json()
+    try:
+        items = data['msgBody']['itemList']
+        results = []
+        for item in items:
+            ars_id = item['arsId']
+            station_name = item['stNm']
+            arrivals = get_station_arrivals(ars_id)
+            results.append({
+                "stationName": station_name,
+                "arsId": ars_id,
+                "arrivals": arrivals
+            })
+        return results
+    except:
+        return []
+
+# db 관리 함수
 def get_db_connection():
     conn = sqlite3.connect('app.db')
     conn.row_factory = sqlite3.Row
@@ -119,6 +171,14 @@ def home():
     arrivals = get_bus_arrival_info(bus_stop_id)
 
     return render_template('home.html', username=session['username'], arrivals=arrivals)
+
+@app.route('/search', methods=['GET', 'POST'])
+def search():
+    if request.method == 'POST':
+        query = request.form['station']
+        result = get_stations_by_name(query)
+        return render_template('search.html', results=result, query=query)
+    return render_template('search.html')
 
 if __name__ == '__main__':
     app.secret_key = app.config['SECRET_KEY']
