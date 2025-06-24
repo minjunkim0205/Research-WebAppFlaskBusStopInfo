@@ -1,9 +1,12 @@
 from flask import Flask, request, render_template, redirect, url_for, flash, session
 import sqlite3
+import requests
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
-app.config['SESSION_TYPE'] = 'filesystem'  # flash 메시지용
+app.config['SESSION_TYPE'] = 'filesystem'
+
+API_KEY = '발급받은_API_키_여기에_넣기'  # data.go.kr에서 받은 키로 변경하세요
 
 def get_db_connection():
     conn = sqlite3.connect('app.db')
@@ -22,6 +25,26 @@ def create_tables():
     ''')
     conn.commit()
     conn.close()
+
+def get_bus_arrival_info(bus_stop_id):
+    url = 'http://apis.data.go.kr/1613000/BusArrivalService/getBusArrivalList'
+    params = {
+        'serviceKey': API_KEY,
+        'stationId': bus_stop_id,
+        'numOfRows': '5',
+        'pageNo': '1',
+        '_type': 'json'
+    }
+    try:
+        resp = requests.get(url, params=params)
+        resp.raise_for_status()
+        data = resp.json()
+
+        items = data.get('response', {}).get('body', {}).get('items', {}).get('item', [])
+        return items
+    except Exception as e:
+        print('버스 도착 정보 조회 실패:', e)
+        return []
 
 @app.route('/')
 def index():
@@ -90,7 +113,12 @@ def home():
     if 'username' not in session:
         flash("로그인이 필요합니다.", "warning")
         return redirect(url_for('login_form'))
-    return render_template('home.html', username=session['username'])
+
+    # TODO: 사용자별 정류장 DB 연동 후 실제 정류장 ID 받아오기
+    bus_stop_id = '123456'  # 임시 고정값, 실제로는 사용자별 DB 정보 필요
+    arrivals = get_bus_arrival_info(bus_stop_id)
+
+    return render_template('home.html', username=session['username'], arrivals=arrivals)
 
 if __name__ == '__main__':
     app.secret_key = app.config['SECRET_KEY']
