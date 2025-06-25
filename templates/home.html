@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>홈</title>
+    <title>홈 - 즐겨찾기 버스 정류장</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
 </head>
 
@@ -12,48 +12,43 @@
     <div class="container mt-5" style="max-width: 700px;">
         <h2 class="mb-4">환영합니다, {{ username }}님!</h2>
 
-        <!-- 검색 페이지 이동 버튼 -->
-        <div class="mb-4">
-            <a href="{{ url_for('search') }}" class="btn btn-primary">
-                버스 정류장 검색하러 가기
-            </a>
-        </div>
+        <h3>즐겨찾기 정류장 버스 도착 정보</h3>
 
-        <h3>즐겨찾기 버스 정류장</h3>
-
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>버스 번호</th>
-                    <th>도착 예정 시간 (분)</th>
-                    <th>다음 도착 예정 시간 (분)</th>
-                    <th>즐겨찾기 해제</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if arrivals %}
-                {% for bus in arrivals %}
-                <tr>
-                    <td>{{ bus.busNumber or bus.routeId or 'N/A' }}</td>
-                    <td>{{ bus.arrival1 if bus.arrival1 is not none else '정보 없음' }}</td>
-                    <td>{{ bus.arrival2 if bus.arrival2 is not none else '정보 없음' }}</td>
-                    <td>
-                        <form method="POST" action="{{ url_for('remove_favorite') }}">
-                            <input type="hidden" name="ars_id" value="{{ bus.arsId }}" />
-                            <button type="submit" class="btn btn-sm btn-danger">즐겨찾기 해제</button>
-                        </form>
-                    </td>
-                </tr>
+        {% if favorites %}
+        {% for station in favorites %}
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>{{ station.stationName }}</strong> (ARS ID: {{ station.arsId }})
+                <form method="POST" action="{{ url_for('favorite_remove') }}" class="mb-0">
+                    <input type="hidden" name="stId" value="{{ station.arsId }}" />
+                    <button type="submit" class="btn btn-sm btn-danger">즐겨찾기 해제</button>
+                </form>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% if station.arrivals %}
+                {% for bus in station.arrivals %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span><strong>{{ bus.busNumber }}번</strong> 버스</span>
+                    <span>
+                        첫 도착: {{ bus.arrival1 if bus.arrival1 is not none else '정보 없음' }}분,
+                        다음 도착: {{ bus.arrival2 if bus.arrival2 is not none else '정보 없음' }}분
+                    </span>
+                </li>
                 {% endfor %}
                 {% else %}
-                <tr>
-                    <td colspan="4">즐겨찾기 된 버스 정류장이 없습니다.</td>
-                </tr>
+                <li class="list-group-item text-muted">도착 예정 버스 정보가 없습니다.</li>
                 {% endif %}
-            </tbody>
-        </table>
+            </ul>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p>즐겨찾기된 정류장이 없습니다. <a href="{{ url_for('search') }}">검색하러 가기</a></p>
+        {% endif %}
 
-        <a href="/logout" class="btn btn-danger">로그아웃</a>
+        <div class="mt-4">
+            <a href="{{ url_for('search') }}" class="btn btn-primary">버스 정류장 검색</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-danger">로그아웃</a>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
