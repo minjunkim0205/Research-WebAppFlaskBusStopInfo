@@ -1,0 +1,4 @@
+# Config 폴더는 업로드, setting.py 는 제외
+
+!config/
+config/setting.py

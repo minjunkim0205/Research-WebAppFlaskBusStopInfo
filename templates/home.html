@@ -12,13 +12,22 @@
     <div class="container mt-5" style="max-width: 700px;">
         <h2 class="mb-4">환영합니다, {{ username }}님!</h2>
 
-        <h3>버스 도착 정보</h3>
+        <!-- 검색 페이지 이동 버튼 -->
+        <div class="mb-4">
+            <a href="{{ url_for('search') }}" class="btn btn-primary">
+                버스 정류장 검색하러 가기
+            </a>
+        </div>
+
+        <h3>즐겨찾기 버스 정류장</h3>
+
         <table class="table table-striped">
             <thead>
                 <tr>
                     <th>버스 번호</th>
-                    <th>도착 예정 시간</th>
-                    <th>남은 정류장 수</th>
+                    <th>도착 예정 시간 (분)</th>
+                    <th>다음 도착 예정 시간 (분)</th>
+                    <th>즐겨찾기 해제</th>
                 </tr>
             </thead>
             <tbody>
@@ -26,13 +35,19 @@
                 {% for bus in arrivals %}
                 <tr>
                     <td>{{ bus.busNumber or bus.routeId or 'N/A' }}</td>
-                    <td>{{ bus.arrivalTime or '정보없음' }}</td>
-                    <td>{{ bus.remainingStops or '정보없음' }}</td>
+                    <td>{{ bus.arrival1 if bus.arrival1 is not none else '정보 없음' }}</td>
+                    <td>{{ bus.arrival2 if bus.arrival2 is not none else '정보 없음' }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('remove_favorite') }}">
+                            <input type="hidden" name="ars_id" value="{{ bus.arsId }}" />
+                            <button type="submit" class="btn btn-sm btn-danger">즐겨찾기 해제</button>
+                        </form>
+                    </td>
                 </tr>
                 {% endfor %}
                 {% else %}
                 <tr>
-                    <td colspan="3">도착정보가 없습니다.</td>
+                    <td colspan="4">즐겨찾기 된 버스 정류장이 없습니다.</td>
                 </tr>
                 {% endif %}
             </tbody>
