@@ -1,0 +1,85 @@
+{% extends "layout.html" %}
+{% block title %}홈 - 버스 앱{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">환영합니다{{ username and ', ' ~ username }}!</h2>
+
+{% if favorites %}
+<h4>즐겨찾는 버스</h4>
+<ul class="list-group">
+    {% for fav in favorites %}
+    <li class="list-group-item">
+        {{ fav.route_id }}번 - {{ fav.station_name }} ({{ fav.ars_id }})
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>즐겨찾기가 없습니다.</p>
+{% endif %}
+
+<form method="GET" action="{{ url_for('main.search_station') }}" class="mt-5 mb-4">
+    <div class="mb-3">
+        <label for="station_name" class="form-label">정류장 이름</label>
+        <input type="text" class="form-control" id="station_name" name="keyword" placeholder="예: 강남역" required>
+    </div>
+    <button type="submit" class="btn btn-primary">정류장 검색</button>
+</form>
+
+{% if station_list %}
+<h4 class="mb-3">검색된 정류장</h4>
+<div id="map" style="height: 400px;" class="mb-4"></div>
+<div class="row">
+    {% for station in station_list %}
+    <div class="col-md-6 col-lg-4 mb-3">
+        <a href="{{ url_for('view_station') }}?arsId={{ station.arsId }}" class="text-decoration-none">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">{{ station.stationName }}</h5>
+                    <p class="card-text">정류장 ID: {{ station.arsId }}</p>
+                    <p class="text-muted small">위치: ({{ station.tmY }}, {{ station.tmX }})</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if selected_station %}
+<h4 class="mt-5 mb-3">선택한 정류장 위치</h4>
+<div id="fav_map" style="height: 300px;" class="mb-4"></div>
+{% endif %}
+
+<!-- 지도 스크립트 공통 포함 -->
+{% if station_list or selected_station %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        {% if station_list %}
+        const stationList = [
+            {% for s in station_list %}
+            {
+            name: "{{ s.stationName }}",
+            lat: {{ s.tmY }},
+        lng: {{ s.tmX }},
+        arsId: "{{ s.arsId }}"
+            },
+        {% endfor %}
+        ];
+    renderMapMultiple("map", stationList);
+    {% endif %}
+
+    {% if selected_station %}
+    renderMap("fav_map",
+        {{ selected_station.tmY }},
+        {{ selected_station.tmX }},
+        "{{ selected_station.stationName }}",
+        "{{ selected_station.arsId }}"
+    );
+    {% endif %}
+    });
+</script>
+{% endif %}
+{% endblock %}

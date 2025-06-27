@@ -3,7 +3,7 @@ import os
 import config
 import flask
 import dotenv
-import app.db as db
+import app.database as database
 import app.routes as routes
 
 def create_app():
@@ -17,7 +17,7 @@ def create_app():
 
     # Init DB within app context
     with app.app_context():
-        db.init_db()
+        database.init_db()
 
     # Register Blueprints
     app.register_blueprint(routes.main)
