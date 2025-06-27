@@ -1,10 +1,10 @@
 # Import module
 import sqlite3
-import config
-from pathlib import Path
+import pathlib
+from config import Config
 
 # Load DB path
-DB_PATH = Path(config.DATABASE)
+DB_PATH = pathlib.Path(Config.DATABASE)
 
 # DB connection
 def get_connection():
