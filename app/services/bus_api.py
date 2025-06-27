@@ -1,10 +1,13 @@
 # Import module
-from config import api
+import config
 import xml.etree.ElementTree as ET
 import requests
+import os
+from dotenv import load_dotenv
 
-# API key load
-API_KEY = api.KEY["seoul_bus_stop_information_decoding"]
+# Load .env API key
+load_dotenv()
+API_KEY = os.getenv("BUS_API_DECODE_KEY")
 
 # Find station info by station name(type:str)
 def get_station_by_name(stSrch: str = None) -> list[dict[str, str]]:

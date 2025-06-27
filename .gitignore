@@ -1,6 +1,5 @@
-# 민감한 정보를 저장하고 있는 파일 무시
+# Venv
+.venv/
 
-!config/
-config/__pycache_
-config/api.py
-config/secret.py
+# Env
+.env
