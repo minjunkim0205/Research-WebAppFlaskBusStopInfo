@@ -1,5 +1,92 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>환영합니다, {{ username }}님!</h1>
-<p>버스 도착 정보 서비스를 이용하세요.</p>
+{% if favorites %}
+<h4 class="mt-4">즐겨찾는 버스</h4>
+<div class="d-flex flex-row flex-nowrap overflow-auto pb-3">
+    {% for fav in favorites %}
+    <a href="{{ url_for('favorite_info') }}?arsId={{ fav[1] }}&route={{ fav[2] }}" class="text-decoration-none me-3">
+        <div class="card shadow-sm" style="min-width: 200px;">
+            <div class="card-body">
+                <h5 class="card-title">{{ fav[2] }}번</h5>
+                <p class="card-text small">{{ fav[0] }}</p>
+                <p class="text-muted small">
+                    {% if '곧 도착' in fav[3] or '전 정류장 출발' in fav[3] %}
+                    <span class="text-danger fw-bold">{{ fav[3] }}</span>
+                    {% else %}
+                    {{ fav[3] }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+<form method="POST" class="mb-4 mt-4">
+    <div class="mb-3">
+        <label for="station_name" class="form-label">정류장 이름</label>
+        <input type="text" class="form-control" id="station_name" name="station_name" placeholder="예: 고덕" required>
+    </div>
+    <button type="submit" class="btn btn-secondary">정류장 검색</button>
+</form>
+{% if station_list %}
+<h4>검색된 정류장 목록</h4>
+<div id="map" style="height: 400px;" class="mb-4"></div>
+<div class="row">
+    {% for station in station_list %}
+    <div class="col-md-6 col-lg-4 mb-3">
+        <a href="{{ url_for('view_station') }}?arsId={{ station.arsId }}" class="text-decoration-none">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">{{ station.stationName }}</h5>
+                    <p class="card-text">정류장 ID: {{ station.arsId }}</p>
+                    <p class="text-muted small">위치: ({{ station.tmY }}, {{ station.tmX }})</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    var stations = [];
+    {% for station in station_list %}
+    stations.push({
+        name: "{{ station.stationName }}",
+        lat: {{ station.tmY }},
+        lng: {{ station.tmX }},
+        arsId: "{{ station.arsId }}"
+        });
+    {% endfor %}
+
+    var map = L.map('map').setView([stations[0].lat, stations[0].lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+    }).addTo(map);
+
+    stations.forEach(function (station) {
+        L.marker([station.lat, station.lng])
+            .addTo(map)
+            .bindPopup(`<strong>${station.name}</strong><br/>정류장 ID: ${station.arsId}<br/><a href="/view?arsId=${station.arsId}">조회</a>`);
+    });
+</script>
+{% endif %}
+{% if selected_station %}
+<h4>정류장 위치</h4>
+<div id="fav_map" style="height: 300px;" class="mb-4"></div>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    var favLat = {{ selected_station.tmY }};
+    var favLng = {{ selected_station.tmX }};
+    var favMap = L.map('fav_map').setView([favLat, favLng], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+    }).addTo(favMap);
+    L.marker([favLat, favLng]).addTo(favMap)
+        .bindPopup("<strong>{{ selected_station.stationName }}</strong><br/>정류장 ID: {{ selected_station.arsId }}").openPopup();
+</script>
+{% endif %}
 {% endblock %}
