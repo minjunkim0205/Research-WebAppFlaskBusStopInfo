@@ -7,32 +7,29 @@ from app.services import bus_api
 # Init
 main = flask.Blueprint("main", __name__)
 
-# Home route
+# Index route
 @main.route("/")
 def index():
-    if "username" in flask.session:
-        return flask.redirect(flask.url_for("main.home"))
-    else:
-        return flask.redirect(flask.url_for("main.login"))
-    return flask.render_template("index.html")
-
-@main.route("/home")
-def home():
-    user_id = flask.session.get("user_id")
-    if not user_id:
-        return flask.redirect(flask.url_for("main.login"))
-    
-    user_id = flask.session["user_id"]
-    favorites = database.get_favorite_buses(user_id)
-    return flask.render_template("home/home.html", favorites=favorites, username=flask.session["username"])
+    # GET
+    if flask.request.method == "GET":
+        if "username" in flask.session:
+            return flask.redirect(flask.url_for("main.home"))
+        else:
+            return flask.redirect(flask.url_for("main.login"))
+    # POST
+    if flask.request.method == "POST":
+        pass
 
 # Auth route
 @main.route("/login", methods=["GET", "POST"])
 def login():
+    # GET
+    if flask.request.method == "GET":
+        return flask.render_template("auth/login.html")
+    # POST
     if flask.request.method == "POST":
         username = flask.request.form["username"]
-        password = flask.request.form["password"]
-
+        password = flask.request.form["password"]   
         user = database.verify_user(username, password)
         if user and werkzeug.security.check_password_hash(user["password"], password):
             flask.session["user_id"] = user["id"]
@@ -41,16 +38,28 @@ def login():
             return flask.redirect(flask.url_for("main.home"))
         else:
             flask.flash("아이디 또는 비밀번호가 틀렸습니다.", "danger")
-    return flask.render_template("auth/login.html")
+            return flask.render_template("auth/login.html")
 
-@main.route("/logout")
+@main.route("/logout", methods=["GET", "POST"])
 def logout():
-    flask.session.pop("username", None)
-    flask.flash("로그아웃 되었습니다.", "info")
-    return flask.redirect(flask.url_for("main.login"))
+    # GET
+    if flask.request.method == "GET":
+        flask.session.pop("username", None)
+        flask.flash("로그아웃 되었습니다.", "info")
+        return flask.redirect(flask.url_for("main.login"))
+    # POST
+    if flask.request.method == "POST":
+        pass
 
 @main.route("/signup", methods=["GET", "POST"])
 def signup():
+
+    # TODO: 별도의 if 문으로 GET, POST 분리
+    # FIXME: Index route 의 GET, POST 방식을 레퍼런스로 잡고 수정 이어가기
+    # NOTE: signup 부터 진행 -> 하위 코드로
+    
+    if flask.request.method == "GET":
+        return flask.render_template("auth/signup.html")
     if flask.request.method == "POST":
         username = flask.request.form["username"]
         password = flask.request.form["password"]
@@ -60,6 +69,17 @@ def signup():
         else:
             flask.flash("이미 존재하는 사용자명입니다.", "danger")
     return flask.render_template("auth/signup.html")
+
+# Home route
+@main.route("/home")
+def home():
+    user_id = flask.session.get("user_id")
+    if not user_id:
+        return flask.redirect(flask.url_for("main.login"))
+    
+    user_id = flask.session["user_id"]
+    favorites = database.get_favorite_buses(user_id)
+    return flask.render_template("home/home.html", favorites=favorites, username=flask.session["username"])
 
 # Bus route
 
@@ -72,27 +92,3 @@ def search_station():
 
     stations = bus_api.get_station_by_name(keyword)
     return flask.render_template("bus/search.html", stations=stations, keyword=keyword)
-
-@main.route("/search/station/<ars_id>")
-def station_detail(ars_id):
-    buses = bus_api.get_station_by_uid(ars_id)
-    return flask.render_template("bus/detail.html", ars_id=ars_id, buses=buses)
-
-@main.route("/favorite/add", methods=["POST"])
-def add_favorite():
-    if "user_id" not in flask.session:
-        flask.flash("로그인이 필요합니다.", "warning")
-        return flask.redirect(flask.url_for("main.login"))
-
-    user_id = flask.session["user_id"]
-    route_id = flask.request.form.get("route_id")
-    station_name = flask.request.form.get("station_name")
-    ars_id = flask.request.form.get("ars_id")
-
-    if not (route_id and station_name and ars_id):
-        flask.flash("필수 정보가 누락되었습니다.", "danger")
-        return flask.redirect(flask.request.referrer or flask.url_for("main.home"))
-
-    database.add_favorite_bus(user_id, route_id, station_name, ars_id)
-    flask.flash("즐겨찾기에 추가되었습니다.", "success")
-    return flask.redirect(flask.request.referrer or flask.url_for("main.home"))
