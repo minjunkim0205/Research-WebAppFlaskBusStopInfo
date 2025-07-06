@@ -8,7 +8,7 @@ from app.services import bus_api
 main = flask.Blueprint("main", __name__)
 
 # Index route
-@main.route("/")
+@main.route("/", methods=["GET", "POST"])
 def index():
     # GET
     if flask.request.method == "GET":
@@ -53,13 +53,10 @@ def logout():
 
 @main.route("/signup", methods=["GET", "POST"])
 def signup():
-
-    # TODO: 별도의 if 문으로 GET, POST 분리
-    # FIXME: Index route 의 GET, POST 방식을 레퍼런스로 잡고 수정 이어가기
-    # NOTE: signup 부터 진행 -> 하위 코드로
-    
+    # GET
     if flask.request.method == "GET":
         return flask.render_template("auth/signup.html")
+    # POST
     if flask.request.method == "POST":
         username = flask.request.form["username"]
         password = flask.request.form["password"]
@@ -68,27 +65,35 @@ def signup():
             return flask.redirect(flask.url_for("main.login"))
         else:
             flask.flash("이미 존재하는 사용자명입니다.", "danger")
-    return flask.render_template("auth/signup.html")
+            return flask.render_template("auth/signup.html")
 
 # Home route
-@main.route("/home")
+@main.route("/home", methods=["GET", "POST"])
 def home():
-    user_id = flask.session.get("user_id")
-    if not user_id:
-        return flask.redirect(flask.url_for("main.login"))
-    
-    user_id = flask.session["user_id"]
-    favorites = database.get_favorite_buses(user_id)
-    return flask.render_template("home/home.html", favorites=favorites, username=flask.session["username"])
+    # GET
+    if flask.request.method == "GET":
+        user_id = flask.session.get("user_id")
+        if not user_id:
+            return flask.redirect(flask.url_for("main.login"))
+        if user_id:
+            user_id = flask.session["user_id"]
+            return flask.render_template("home/home.html", username=flask.session["username"])
+    # POST
+    if flask.request.method == "POST":
+        pass
 
 # Bus route
-
-@main.route("/search", methods=["GET"])
+@main.route("/search", methods=["GET", "POST"])
 def search_station():
-    keyword = flask.request.args.get("keyword", "")
-    if not keyword:
-        flask.flash("검색어를 입력해주세요.", "warning")
-        return flask.redirect(flask.url_for("main.home"))
-
-    stations = bus_api.get_station_by_name(keyword)
-    return flask.render_template("bus/search.html", stations=stations, keyword=keyword)
+    # GET
+    if flask.request.method == "GET":
+        keyword = flask.request.args.get("keyword", "")
+        if not keyword:
+            flask.flash("검색어를 입력해주세요.", "warning")
+            return flask.redirect(flask.url_for("main.home"))
+        if keyword:
+            stations = bus_api.get_station_by_name(keyword)
+            return flask.render_template("bus/search.html", stations=stations, keyword=keyword)
+    # POST
+    if flask.request.method == "POST":
+        pass

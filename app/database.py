@@ -25,7 +25,6 @@ def init_db():
                 password TEXT NOT NULL
             );
         """)
-
         # Favorite bus table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users_favorites_bus (
@@ -39,7 +38,7 @@ def init_db():
         """)
         conn.commit()
 
-# Auth DB
+# User Table
 def add_user(username, password):
     hashed_pw = werkzeug.security.generate_password_hash(password)
     try:
@@ -65,9 +64,10 @@ def verify_user(username, password):
     user = get_user_by_username(username)
     if user and werkzeug.security.check_password_hash(user["password"], password):
         return user  # 로그인 성공 시 사용자 정보 반환
-    return None      # 실패 시 None 반환
+    else:
+        return None      # 실패 시 None 반환
 
-# Bus DB
+# Bus Table
 def add_favorite_bus(user_id, route_id, station_name, ars_id):
     conn = get_connection()
     cur = conn.cursor()
