@@ -48,7 +48,8 @@ def add_user(username, password):
         conn.commit()
         return True
     except sqlite3.IntegrityError:
-        return False  # Username duplication
+        # 유저명 증복
+        return False
     finally:
         conn.close()
 
@@ -58,14 +59,17 @@ def get_user_by_username(username):
     cur.execute("SELECT * FROM users WHERE username = ?", (username,))
     user = cur.fetchone()
     conn.close()
-    return user  # sqlite3.Row 또는 dict-like 객체 반환 가정
+    # sqlite3.Row, dict-like 반환 
+    return user
 
 def verify_user(username, password):
     user = get_user_by_username(username)
     if user and werkzeug.security.check_password_hash(user["password"], password):
-        return user  # 로그인 성공 시 사용자 정보 반환
+        # 로그인 성공, 사용자 정보 반환
+        return user
     else:
-        return None      # 실패 시 None 반환
+        # 로그인 실패, None 반환
+        return None
 
 # Bus Table
 def add_favorite_bus(user_id, route_id, station_name, ars_id):
